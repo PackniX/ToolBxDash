@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Lumbr Yard TOOLBX Dashboard</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #f0f0f0 url('https://via.placeholder.com/1500x1000?text=Wood+Grain') repeat; margin: 0; padding: 20px; }
+        .container { max-width: 1000px; margin: 0 auto; text-align: center; }
+        h1 { color: #333; font-size: 28px; margin-bottom: 20px; }
+        .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 30px; }
+        .kpi-card { background: #F5A623; color: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.2); cursor: pointer; transition: transform 0.2s; }
+        .kpi-card:hover { transform: scale(1.05); }
+        .kpi-card h3 { margin: 0; font-size: 16px; }
+        .kpi-card p { margin: 5px 0 0; font-size: 24px; font-weight: bold; }
+        canvas { background: white; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+        #toggleBtn { background: #E59400; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; margin-bottom: 20px; }
+        #toggleBtn:hover { background: #F5A623; }
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); }
+        .modal-content { background: white; margin: 15% auto; padding: 20px; width: 50%; border-radius: 8px; text-align: left; }
+        .close { float: right; font-size: 24px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Lumbr Yard TOOLBX Dashboard – Q1 2025</h1>
+        <button id="toggleBtn">Switch to Pro Adoption View</button>
+        <div class="kpi-grid" id="kpiGrid">
+            <div class="kpi-card" onclick="showModal('orders')"><h3>Orders Placed</h3><p id="orders">4,831</p></div>
+            <div class="kpi-card" onclick="showModal('delivery')"><h3>On-Time Delivery</h3><p id="delivery">92%</p></div>
+            <div class="kpi-card" onclick="showModal('savings')"><h3>Cost Savings</h3><p id="savings">$52K</p></div>
+            <div class="kpi-card" onclick="showModal('adoption')"><h3>Pro Adoption</h3><p id="adoption">25%</p></div>
+        </div>
+        <canvas id="ordersChart" width="800" height="400"></canvas>
+    </div>
+
+    <div id="modal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal()">×</span>
+            <div id="modalDetails"></div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        // Updated data from payments and activations
+        const details = {
+            orders: "Total Orders: 4,831<br>Online: 3,865 (80%)<br>Offline: 966 (20%)",
+            delivery: "On-Time: 4,444 orders (92%)<br>Late: 387 orders (8%)<br>Avg. Delivery: 1.5 days",
+            savings: "Fraud Prevention: $3.75K<br>AR Efficiency: $48K<br>Total: $52K",
+            adoption: "Active Pros: 50/200 (25%)<br>Cumulative Activations: 5,946<br>Houston: 17, Waco: 2, Dallas: 2"
+        };
+
+        const chartData = {
+            overview: {
+                labels: ['Houston', 'Austin', 'Waco', 'San Antonio', 'Dallas', 'Amarillo'],
+                data: [1663, 1060, 159, 1060, 226, 663],
+                label: 'Orders by Location'
+            },
+            adoption: {
+                labels: ['Houston', 'Austin', 'Waco', 'San Antonio', 'Dallas', 'Amarillo'],
+                data: [34, 22, 10, 22, 10, 14], // % of 200 Pros, aligned with payments
+                label: 'Pro Adoption % by Location'
+            }
+        };
+
+        // Animation
+        const animateValue = (id, start, end, duration) => {
+            let startTimestamp = null;
+            const step = (timestamp) => {
+                if (!startTimestamp) startTimestamp = timestamp;
+                const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+                document.getElementById(id).innerText = Math.floor(progress * (end - start) + start) + (id === 'delivery' || id === 'adoption' ? '%' : id === 'savings' ? 'K' : '');
+                if (progress < 1) requestAnimationFrame(step);
+            };
+            requestAnimationFrame(step);
+        };
+
+        animateValue('orders', 0, 4831, 2000);
+        animateValue('delivery', 0, 92, 2000);
+        animateValue('savings', 0, 52, 2000);
+        animateValue('adoption', 0, 25, 2000);
+
+        // Chart setup
+        const ctx = document.getElementById('ordersChart').getContext('2d');
+        let chart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: chartData.overview.labels,
+                datasets: [{ label: chartData.overview.label, data: chartData.overview.data, backgroundColor: '#F5A623', borderColor: '#E59400', borderWidth: 1 }]
+            },
+            options: {
+                scales: { y: { beginAtZero: true, title: { display: true, text: 'Orders' } } },
+                plugins: { legend: { display: false } },
+                onClick: (event, elements) => {
+                    if (elements.length) {
+                        const index = elements[0].index;
+                        const location = chartData.overview.labels[index];
+                        showModal('chart', `Location: ${location}<br>Orders: ${chartData.overview.data[index]}<br>Pro Adoption: ${chartData.adoption.data[index]}%`);
+                    }
+                }
+            }
+        });
+
+        // Toggle logic
+        let isOverview = true;
+        document.getElementById('toggleBtn').addEventListener('click', () => {
+            isOverview = !isOverview;
+            const mode = isOverview ? 'overview' : 'adoption';
+            chart.data.labels = chartData[mode].labels;
+            chart.data.datasets[0].data = chartData[mode].data;
+            chart.data.datasets[0].label = chartData[mode].label;
+            chart.options.scales.y.title.text = isOverview ? 'Orders' : 'Adoption %';
+            chart.update();
+            document.getElementById('toggleBtn').innerText = isOverview ? 'Switch to Pro Adoption View' : 'Switch to Overview';
+        });
+
+        // Modal logic
+        function showModal(type, customContent = null) {
+            const modal = document.getElementById('modal');
+            const modalDetails = document.getElementById('modalDetails');
+            modalDetails.innerHTML = customContent || details[type];
+            modal.style.display = 'block';
+        }
+
+        function closeModal() {
+            document.getElementById('modal').style.display = 'none';
+        }
+    </script>
+</body>
+</html>
