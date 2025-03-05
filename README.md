@@ -20,12 +20,9 @@ This project serves as a tool for tracking business metrics, with features like 
 
 ## Demo
 
-You can view a live demo of the dashboard [here](#) (*replace with a link if hosted*).
+You can view a live demo of the dashboard [here](#).
 
 ## Installation
 
 To run this project locally:
 
-1. **Clone the Repository**:
-   ```bash
-   git clone https://github.com/your-username/lumbr-yard-toolbx-dashboard.git
